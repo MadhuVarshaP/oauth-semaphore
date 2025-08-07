@@ -14,6 +14,7 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
+
   // Helper function to add logs
   const addLog = (message) => {
     setLogs((prevLogs) => [...prevLogs, `${new Date().toLocaleTimeString()}: ${message}`]);
