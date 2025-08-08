@@ -2,6 +2,12 @@ import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 
 // Simple environment variable check
+console.log('Environment check:')
+console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL)
+console.log('NEXTAUTH_SECRET exists:', !!process.env.NEXTAUTH_SECRET)
+console.log('GOOGLE_CLIENT_ID exists:', !!process.env.GOOGLE_CLIENT_ID)
+console.log('GOOGLE_CLIENT_SECRET exists:', !!process.env.GOOGLE_CLIENT_SECRET)
+
 if (!process.env.NEXTAUTH_SECRET) {
   console.error('NEXTAUTH_SECRET is not set')
 }
@@ -10,6 +16,9 @@ if (!process.env.GOOGLE_CLIENT_ID) {
 }
 if (!process.env.GOOGLE_CLIENT_SECRET) {
   console.error('GOOGLE_CLIENT_SECRET is not set')
+}
+if (!process.env.NEXTAUTH_URL) {
+  console.error('NEXTAUTH_URL is not set')
 }
 
 const handler = NextAuth({
@@ -53,7 +62,7 @@ const handler = NextAuth({
   },
   pages: {
     signIn: '/',
-    // error: '/auth/error',
+    error: '/auth/error',
   },
   debug: process.env.NODE_ENV === 'development',
 })
