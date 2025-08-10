@@ -1,161 +1,152 @@
-# Semaphore OAuth Demo
+# Semaphore + OAuth Demo
 
-A Next.js application demonstrating Semaphore zero-knowledge proofs with Google OAuth authentication.
+A Next.js application demonstrating zero-knowledge proof authentication using Semaphore protocol with Auth0 Google OAuth integration.
 
-## 🚀 Tech Stack
+## 🚀 Features
 
-- **Frontend**: Next.js 15.3.5, React, Tailwind CSS
-- **Authentication**: NextAuth.js with Google OAuth
-- **Zero-Knowledge Proofs**: Semaphore Protocol v3.15.2
-- **Backend**: Next.js API Routes
-- **Storage**: Local JSON files for group data
+- **Auth0 Google OAuth**: Secure authentication with Google accounts
+- **Semaphore Protocol**: Zero-knowledge proof generation and verification
+- **Group Management**: Dynamic group membership with cryptographic commitments
+- **Real-time Logging**: Detailed activity tracking throughout the flow
+- **Modern UI**: Clean, responsive interface with step-by-step guidance
 
-## 📁 Project Structure
+## 📋 Prerequisites
 
+- Node.js 18+ 
+- npm or yarn
+- Auth0 account
+- Google OAuth credentials
+
+## 🛠️ Setup Instructions
+
+### 1. Auth0 Configuration
+
+#### Create Auth0 Application
+1. Go to [Auth0 Dashboard](https://manage.auth0.com/)
+2. Create a new application or use existing one
+3. Set application type to "Regular Web Application"
+4. Configure the following settings:
+
+**Allowed Callback URLs:**
 ```
-semaphore-oauth-demo/
-├── data/
-│   └── group.json                 # Group data storage
-├── lib/
-│   ├── groupData.js              # Group data utilities
-│   └── semaphore/
-│       ├── group.js              # Group management
-│       └── identity.js           # Identity utilities
-├── pages/
-│   ├── api/
-│   │   ├── auth/
-│   │   │   └── [...nextauth].js  # NextAuth configuration
-│   │   └── zk/
-│   │       ├── group/
-│   │       │   ├── full.js       # GET group details
-│   │       │   ├── members.js    # POST add member
-│   │       │   └── reset.js      # POST reset group
-│   │       ├── identity/
-│   │       │   └── init.js       # POST initialize identity
-│   │       ├── proof.js          # POST generate proof
-│   │       └── verify.js         # POST verify proof
-│   └── index.js                  # Main frontend page
-├── public/
-│   └── semaphore/
-│       └── 20/
-│           ├── semaphore.wasm    # SNARK circuit file
-│           └── semaphore.zkey    # SNARK proving key
-└── package.json
+http://localhost:3000/api/auth/callback
 ```
 
-## 🔌 API Endpoints
+**Allowed Logout URLs:**
+```
+http://localhost:3000
+```
 
-### Authentication
-- **`GET /api/auth/session`** - Get current session
-- **`POST /api/auth/signin`** - Sign in with Google
-- **`POST /api/auth/signout`** - Sign out
+**Allowed Web Origins:**
+```
+http://localhost:3000
+```
 
-### Group Management
-- **`GET /api/zk/group/full`** - Get complete group data
-  - Returns: `{ id, treeDepth, members, root, memberCount, success }`
-- **`POST /api/zk/group/members`** - Add member to group
-  - Body: `{ commitment: string }`
-  - Returns: `{ message, success }`
-- **`POST /api/zk/group/reset`** - Reset group (remove all members)
-  - Returns: `{ message, success }`
+#### Configure Google Social Connection
+1. In Auth0 Dashboard, go to "Authentication" → "Social"
+2. Enable Google connection
+3. Configure Google OAuth credentials:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing
+   - Enable Google+ API
+   - Create OAuth 2.0 credentials
+   - Add `https://your-tenant.auth0.com/login/callback` to authorized redirect URIs
+4. Copy Client ID and Client Secret to Auth0 Google connection settings
 
-### Identity Management
-- **`POST /api/zk/identity/init`** - Initialize new identity
-  - Returns: `{ commitment, success }`
+### 2. Environment Variables
 
-### Zero-Knowledge Proofs
-- **`POST /api/zk/proof`** - Generate Semaphore proof
-  - Body: `{ signal: string }`
-  - Returns: `{ fullProof }` (contains `proof` and `publicSignals`)
-- **`POST /api/zk/verify`** - Verify Semaphore proof
-  - Body: `{ fullProof }`
-  - Returns: `{ valid: boolean }`
+Create a `.env.local` file in the root directory:
 
-## 🔄 API Flow Order
-
-1. **Authentication**: User signs in with Google OAuth
-2. **Initialize Server Identity**: Create server-side identity using user's email
-3. **Join Group**: Add identity commitment to the Semaphore group
-4. **Show Group Details**: Fetch and display group information
-5. **Generate & Verify Proof**: Create and verify zero-knowledge proof
-6. **Complete**: Flow completed successfully
-
-## 🧪 Testing Instructions
-
-### 1. Setup Environment Variables
-Create a `.env.local` file:
 ```env
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-NEXTAUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=http://localhost:3000
+# Auth0 Configuration
+AUTH0_SECRET='use [openssl rand -hex 32] to generate a 32 bytes value'
+AUTH0_BASE_URL='http://localhost:3000'
+AUTH0_ISSUER_BASE_URL='https://your-tenant.auth0.com'
+AUTH0_CLIENT_ID='your-auth0-client-id'
+AUTH0_CLIENT_SECRET='your-auth0-client-secret'
 ```
 
-### 2. Install Dependencies
+**Generate AUTH0_SECRET:**
+```bash
+openssl rand -hex 32
+```
+
+### 3. Install Dependencies
 ```bash
 npm install
 ```
 
-### 3. Start Development Server
+### 4. Start Development Server
 ```bash
 npm run dev
 ```
 
-### 4. Test Frontend Flow
+## 🧪 Testing Instructions
+
+### 1. Test Authentication Flow
 1. Open `http://localhost:3000`
 2. Click "Login with Google"
-3. After authentication, you'll see a step-by-step interface:
-   - **Step 1**: Initialize Server Identity - Create a server-side identity
-   - **Step 2**: Join Group - Add identity commitment to the group
-   - **Step 3**: Show Group Details - Fetch and display group information
-   - **Step 4**: Generate & Verify Proof - Create and verify ZK proof
-   - **Step 5**: Complete - Flow completed successfully
-4. Each step must be completed in order to proceed to the next
-5. Use "Reset Flow" to start over or "Reset Group" to clear all members
+3. Complete Google OAuth flow
+4. Verify you're redirected back to the application
 
-### 5. Test API Endpoints with Postman
+### 2. Test Semaphore Flow
+After successful authentication, you'll see a step-by-step interface:
 
-#### Test Group Info
+1. **Step 1: Initialize Identity**
+   - Creates a server-side identity using your Google email
+   - Generates cryptographic commitment
+
+2. **Step 2: Join Group**
+   - Adds your identity commitment to the Semaphore group
+   - Establishes group membership
+
+3. **Step 3: View Group Details**
+   - Fetches and displays current group information
+   - Shows member count, tree depth, and root
+
+4. **Step 4: Generate Proof**
+   - Creates zero-knowledge proof of membership
+   - Verifies proof without revealing identity
+
+5. **Step 5: Complete**
+   - Flow completed successfully
+
+### 3. Test API Endpoints
+
+#### Initialize Identity
 ```http
-GET http://localhost:3000/api/zk/group/info
+POST http://localhost:3000/api/zk/identity/init
+Authorization: Bearer <auth0-token>
 ```
 
-#### Test Group Full Details
-```http
-GET http://localhost:3000/api/zk/group/full
-```
-
-#### Test Add Member
+#### Join Group
 ```http
 POST http://localhost:3000/api/zk/group/members
 Content-Type: application/json
+Authorization: Bearer <auth0-token>
 
 {
   "commitment": "1234567890123456789012345678901234567890123456789012345678901234"
 }
 ```
 
-#### Test Reset Group
+#### Get Group Details
 ```http
-POST http://localhost:3000/api/zk/group/reset
+GET http://localhost:3000/api/zk/group/full
 ```
 
-#### Test Initialize Server Identity
-```http
-POST http://localhost:3000/api/zk/identity/init
-```
-
-#### Test Generate Proof
+#### Generate Proof
 ```http
 POST http://localhost:3000/api/zk/proof
 Content-Type: application/json
+Authorization: Bearer <auth0-token>
 
 {
   "signal": "my-test-signal"
 }
 ```
 
-#### Test Verify Proof
+#### Verify Proof
 ```http
 POST http://localhost:3000/api/zk/verify
 Content-Type: application/json
@@ -171,71 +162,65 @@ Content-Type: application/json
 ## 🔧 Key Features
 
 ### Frontend Integration
-- **Google OAuth**: Seamless authentication flow
+- **Auth0 Google OAuth**: Seamless authentication flow
 - **Identity Management**: Automatic identity creation and storage
 - **Group Management**: Manual group joining (no auto-join)
 - **Proof Generation**: Client-side proof generation with Semaphore
 - **Real-time Logs**: Detailed logging of all operations
 
-### Backend Features
-- **Session Management**: NextAuth.js session handling
-- **Group Persistence**: JSON file-based group storage
-- **Proof Generation**: Server-side proof generation with SNARK artifacts
-- **Proof Verification**: Off-chain proof verification
-- **Error Handling**: Comprehensive error handling and logging
+### Backend APIs
+- **Authentication**: Auth0 session validation
+- **Identity Creation**: Server-side identity generation
+- **Group Operations**: Member management and group state
+- **Proof Generation**: ZK proof creation and verification
 
-### Security Features
-- **Authentication Required**: All ZK operations require valid session
-- **Identity Validation**: Ensures user identity is in group before proof generation
-- **Session Validation**: Server-side session verification
-- **Input Validation**: Comprehensive input validation for all endpoints
+## 🚨 Security Notes
+
+- **Demo Purpose**: This is a demonstration application
+- **Email as Seed**: Using email as identity seed is not secure for production
+- **Environment Variables**: Never commit `.env.local` to version control
+- **Auth0 Configuration**: Ensure proper callback URLs and CORS settings
+
+## 📁 Project Structure
+
+```
+semaphore-zk-oauth/
+├── pages/
+│   ├── api/
+│   │   ├── auth/[...auth0].js    # Auth0 API routes
+│   │   └── zk/                   # Semaphore API endpoints
+│   ├── _app.js                   # Auth0 UserProvider
+│   └── index.js                  # Main application
+├── lib/
+│   └── semaphore/                # Semaphore utilities
+├── public/
+│   └── semaphore/                # Circuit files
+└── styles/                       # CSS styles
+```
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **"ENOENT: no such file or directory"**
-   - Ensure `public/semaphore/20/semaphore.wasm` and `semaphore.zkey` exist
-   - Check file permissions
+1. **Auth0 Callback Error**
+   - Verify callback URLs in Auth0 dashboard
+   - Check AUTH0_BASE_URL matches your local URL
 
-2. **"Cannot convert undefined to a BigInt"**
-   - Group data may contain invalid members
-   - Try resetting the group: `POST /api/zk/group/reset`
+2. **Google OAuth Error**
+   - Ensure Google+ API is enabled
+   - Verify redirect URIs in Google Cloud Console
 
-3. **"Invalid fullProof structure"**
-   - Ensure you're using the raw output from `/api/zk/proof`
-   - Check that `fullProof` contains both `proof` and `publicSignals`
+3. **Environment Variables**
+   - Check all required Auth0 variables are set
+   - Verify AUTH0_SECRET is properly generated
 
-4. **"Parameter 'merkleTreeDepth' is not a number"**
-   - Ensure you're using Semaphore v3.15.2
-   - Check that `Group` instance is properly initialized
+4. **CORS Issues**
+   - Ensure AUTH0_BASE_URL is correct
+   - Check allowed origins in Auth0 dashboard
 
-### Debug Steps
+## 📚 Resources
 
-1. **Check Logs**: View the detailed logs in the frontend
-2. **Verify Files**: Ensure SNARK artifacts exist in `public/semaphore/20/`
-3. **Test Endpoints**: Use Postman to test individual endpoints
-4. **Clear Storage**: Clear localStorage and try again
-5. **Reset Group**: Use the "Reset Group" button to start fresh
-
-## 📚 Dependencies
-
-```json
-{
-  "@semaphore-protocol/group": "^3.15.2",
-  "@semaphore-protocol/identity": "^3.15.2",
-  "@semaphore-protocol/proof": "^3.15.2",
-  "next": "^15.3.5",
-  "next-auth": "^4.24.5",
-  "react": "^18.3.1"
-}
-```
-
-## 🎯 Next Steps
-
-- [ ] Add on-chain proof verification
-- [ ] Implement group member removal
-- [ ] Add proof history tracking
-- [ ] Implement multiple group support
-- [ ] Add proof export/import functionality
-- [ ] Implement proof sharing between users
+- [Auth0 Next.js SDK](https://auth0.com/docs/quickstart/webapp/nextjs)
+- [Semaphore Protocol](https://semaphore.appliedzkp.org/)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Google OAuth](https://developers.google.com/identity/protocols/oauth2)

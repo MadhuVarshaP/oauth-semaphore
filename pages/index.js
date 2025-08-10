@@ -1,18 +1,18 @@
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useUser, withPageAuthRequired } from '@auth0/nextjs-auth0';
 import { useEffect, useState } from 'react';
 import { Identity } from '@semaphore-protocol/identity';
 import { generateProof } from '@semaphore-protocol/proof';
 import { Group } from '@semaphore-protocol/group';
 
-export default function Home() {
-  const { data: session, status } = useSession();
+function Home() {
+  const { user, error, isLoading } = useUser();
   const [serverIdentity, setServerIdentity] = useState(null);
   const [serverIdentityData, setServerIdentityData] = useState(null);
   const [groupDetails, setGroupDetails] = useState(null);
   const [verificationResult, setVerificationResult] = useState(null);
   const [logs, setLogs] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFlow, setIsLoadingFlow] = useState(false);
 
 
   // Helper function to add logs
@@ -22,7 +22,7 @@ export default function Home() {
 
   // Step 1: Initialize Server Identity
   const initializeServerIdentity = async () => {
-    setIsLoading(true);
+    setIsLoadingFlow(true);
     try {
       const response = await fetch('/api/zk/identity/init', {
         method: 'POST',
@@ -43,7 +43,7 @@ export default function Home() {
       console.error('Error initializing server identity:', error);
       addLog(`Error: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setIsLoadingFlow(false);
     }
   };
 
@@ -54,7 +54,7 @@ export default function Home() {
       return;
     }
     
-    setIsLoading(true);
+    setIsLoadingFlow(true);
     try {
       const response = await fetch('/api/zk/group/members', {
         method: 'POST',
@@ -72,13 +72,13 @@ export default function Home() {
     } catch (error) {
       addLog(`Error joining group: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setIsLoadingFlow(false);
     }
   };
 
   // Step 3: Show Group Details
   const fetchGroupDetails = async () => {
-    setIsLoading(true);
+    setIsLoadingFlow(true);
     try {
       const response = await fetch('/api/zk/group/full');
       const data = await response.json();
@@ -100,7 +100,7 @@ export default function Home() {
       console.error('Error fetching group details:', error);
       addLog(`Error fetching group details: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setIsLoadingFlow(false);
     }
   };
 
@@ -112,7 +112,7 @@ export default function Home() {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingFlow(true);
     try {
       // Use existing group details if available, otherwise fetch
       let groupData = groupDetails;
@@ -157,7 +157,7 @@ export default function Home() {
       addLog('Creating identity from server data for proof generation');
       
       // Create identity using the same seed as the server
-      const userEmail = session?.user?.email;
+      const userEmail = user?.email;
       const identity = new Identity(userEmail);
       
       addLog(`Identity created with commitment: ${identity.commitment.toString()}`);
@@ -200,7 +200,7 @@ export default function Home() {
       setVerificationResult(`Error: ${error.message}`);
       addLog(`Error in proof generation: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setIsLoadingFlow(false);
     }
   };
 
@@ -217,7 +217,7 @@ export default function Home() {
 
   // Reset group
   const resetGroup = async () => {
-    setIsLoading(true);
+    setIsLoadingFlow(true);
     try {
       const response = await fetch('/api/zk/group/reset', {
         method: 'POST',
@@ -235,16 +235,16 @@ export default function Home() {
     } catch (error) {
       addLog(`Error resetting group: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setIsLoadingFlow(false);
     }
   };
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      addLog('Sign in with Google handled by /api/auth/[...nextauth].js');
+    if (user) {
+      addLog('Sign in with Google handled by Auth0');
       addLog('Ready to start Semaphore flow');
     }
-  }, [status]);
+  }, [user]);
 
   const steps = [
     { id: 1, title: 'Initialize Identity', description: 'Create identity' },
@@ -254,7 +254,7 @@ export default function Home() {
     { id: 5, title: 'Complete', description: 'Flow completed' }
   ];
 
-  if (status === 'loading') {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
         <div className="text-center">
@@ -265,7 +265,7 @@ export default function Home() {
     );
   }
 
-  if (status === 'authenticated') {
+  if (user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="max-w-6xl mx-auto p-6">
@@ -274,12 +274,12 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-slate-800">Semaphore + OAuth Demo</h1>
               <p className="text-slate-600 mt-1">Zero-Knowledge Proof Authentication</p>
             </div>
-            <button
-              onClick={signOut}
+            <a
+              href="/api/auth/logout"
               className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors"
             >
               Sign out
-            </button>
+            </a>
           </div>
 
           <div className="mb-8">
@@ -329,10 +329,10 @@ export default function Home() {
                     </p>
                     <button
                       onClick={initializeServerIdentity}
-                      disabled={isLoading}
+                      disabled={isLoadingFlow}
                       className="bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      {isLoading ? 'Initializing...' : 'Initialize Identity'}
+                      {isLoadingFlow ? 'Initializing...' : 'Initialize Identity'}
                     </button>
                   </div>
                 )}
@@ -344,10 +344,10 @@ export default function Home() {
                     </p>
                     <button
                       onClick={joinGroup}
-                      disabled={isLoading}
+                      disabled={isLoadingFlow}
                       className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      {isLoading ? 'Joining...' : 'Join Group'}
+                      {isLoadingFlow ? 'Joining...' : 'Join Group'}
                     </button>
                   </div>
                 )}
@@ -359,10 +359,10 @@ export default function Home() {
                     </p>
                     <button
                       onClick={fetchGroupDetails}
-                      disabled={isLoading}
+                      disabled={isLoadingFlow}
                       className="bg-purple-500 hover:bg-purple-600 disabled:bg-slate-300 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      {isLoading ? 'Fetching...' : 'View Group Details'}
+                      {isLoadingFlow ? 'Fetching...' : 'View Group Details'}
                     </button>
                   </div>
                 )}
@@ -374,10 +374,10 @@ export default function Home() {
                     </p>
                     <button
                       onClick={handleProveMembership}
-                      disabled={isLoading}
+                      disabled={isLoadingFlow}
                       className="bg-green-500 hover:bg-green-600 disabled:bg-slate-300 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      {isLoading ? 'Generating...' : 'Generate Proof'}
+                      {isLoadingFlow ? 'Generating...' : 'Generate Proof'}
                     </button>
                   </div>
                 )}
@@ -485,14 +485,16 @@ export default function Home() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-slate-800 mb-2">Semaphore Demo</h1>
           <p className="text-slate-600 mb-8">Zero-Knowledge Proof Authentication</p>
-          <button
-            onClick={() => signIn('google')}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-          >
-            Login with Google
-          </button>
+                      <a
+              href="/api/auth/login"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md inline-block text-center"
+            >
+              Login with Google
+            </a>
         </div>
       </div>
     </div>
   );
 }
+
+export default withPageAuthRequired(Home);
