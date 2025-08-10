@@ -8,7 +8,6 @@ export default handleAuth({
   clientSecret: process.env.AUTH0_CLIENT_SECRET,
   secret: process.env.AUTH0_SECRET,
   
-  // Error handling
   onError: (err, req, res) => {
     console.error('Auth0 Error:', err);
     console.error('Error details:', {
