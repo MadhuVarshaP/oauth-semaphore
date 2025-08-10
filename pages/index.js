@@ -3,8 +3,10 @@ import { Identity } from '@semaphore-protocol/identity';
 import { generateProof } from '@semaphore-protocol/proof';
 import { Group } from '@semaphore-protocol/group';
 import { getSession } from '@auth0/nextjs-auth0';
+import { useRouter } from 'next/router';
 
 function Home() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,6 +22,14 @@ function Home() {
   const addLog = (message) => {
     setLogs((prevLogs) => [...prevLogs, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
+
+  // Check for URL error parameters
+  useEffect(() => {
+    if (router.query.error) {
+      setError(decodeURIComponent(router.query.error));
+      addLog(`Auth0 Error: ${decodeURIComponent(router.query.error)}`);
+    }
+  }, [router.query.error]);
 
   // Check authentication status
   useEffect(() => {
@@ -288,12 +298,14 @@ function Home() {
               <h1 className="text-3xl font-bold text-slate-800">Semaphore + OAuth Demo</h1>
               <p className="text-slate-600 mt-1">Zero-Knowledge Proof Authentication</p>
             </div>
-            <a
-              href="/api/auth/logout"
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors"
+            <button
+              onClick={() => {
+                window.location.href = '/api/auth/logout';
+              }}
+              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors hover:bg-slate-100 rounded-lg"
             >
               Sign out
-            </a>
+            </button>
           </div>
 
           <div className="mb-8">
@@ -499,12 +511,39 @@ function Home() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-slate-800 mb-2">Semaphore Demo</h1>
           <p className="text-slate-600 mb-8">Zero-Knowledge Proof Authentication</p>
-                      <a
-              href="/api/auth/login"
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md inline-block text-center"
+          
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm font-medium">Authentication Error:</p>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+            </div>
+          )}
+          
+          <button
+            onClick={() => {
+              // Force navigation to Auth0 login
+              window.location.href = '/api/auth/login';
+            }}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Login with Google
+          </button>
+          
+          <p className="text-xs text-slate-500 mt-4">
+            Click the button above to authenticate with Google via Auth0
+          </p>
+          
+          {error && (
+            <button
+              onClick={() => {
+                setError(null);
+                window.location.href = '/api/auth/login';
+              }}
+              className="mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 text-sm"
             >
-              Login with Google
-            </a>
+              Try Again
+            </button>
+          )}
         </div>
       </div>
     </div>
