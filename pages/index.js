@@ -1,11 +1,13 @@
-import { useUser, withPageAuthRequired } from '@auth0/nextjs-auth0';
 import { useEffect, useState } from 'react';
 import { Identity } from '@semaphore-protocol/identity';
 import { generateProof } from '@semaphore-protocol/proof';
 import { Group } from '@semaphore-protocol/group';
+import { getSession } from '@auth0/nextjs-auth0';
 
 function Home() {
-  const { user, error, isLoading } = useUser();
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [serverIdentity, setServerIdentity] = useState(null);
   const [serverIdentityData, setServerIdentityData] = useState(null);
   const [groupDetails, setGroupDetails] = useState(null);
@@ -19,6 +21,26 @@ function Home() {
   const addLog = (message) => {
     setLogs((prevLogs) => [...prevLogs, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await getSession();
+        if (session?.user) {
+          setUser(session.user);
+          addLog('Sign in with Google handled by Auth0');
+          addLog('Ready to start Semaphore flow');
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   // Step 1: Initialize Server Identity
   const initializeServerIdentity = async () => {
@@ -238,13 +260,6 @@ function Home() {
       setIsLoadingFlow(false);
     }
   };
-
-  useEffect(() => {
-    if (user) {
-      addLog('Sign in with Google handled by Auth0');
-      addLog('Ready to start Semaphore flow');
-    }
-  }, [user]);
 
   const steps = [
     { id: 1, title: 'Initialize Identity', description: 'Create identity' },
@@ -497,4 +512,4 @@ function Home() {
   );
 }
 
-export default withPageAuthRequired(Home);
+export default Home;
