@@ -2,7 +2,7 @@ import { getSession } from '@auth0/nextjs-auth0';
 import { generateProof } from '@semaphore-protocol/proof';
 import { Group } from '@semaphore-protocol/group';
 import { Identity } from '@semaphore-protocol/identity';
-import { getGroupData } from '../../lib/semaphore/group';
+import { getGroupData } from '../../../lib/semaphore/group';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
