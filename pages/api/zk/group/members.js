@@ -13,20 +13,40 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
+      console.log('POST /api/zk/group/members - Starting request processing');
+      
       const session = await getSession(req, res);
+      console.log('Session retrieved:', session ? 'Yes' : 'No');
+      
       if (!session || !session.user || !session.user.email) {
-        return res.status(401).json({ message: 'Unauthorized: Please log in' });
+        console.log('Unauthorized access attempt');
+        return res.status(401).json({ 
+          success: false,
+          message: 'Unauthorized: Please log in',
+          error: 'No valid session found'
+        });
       }
 
+      console.log('User authenticated:', session.user.email);
+
       const { commitment } = req.body;
+      console.log('Request body:', req.body);
+      console.log('Commitment from body:', commitment);
+      
       if (!commitment) {
-        return res.status(400).json({ message: 'Commitment is required' });
+        console.log('Missing commitment in request body');
+        return res.status(400).json({ 
+          success: false,
+          message: 'Commitment is required',
+          error: 'No commitment provided in request body'
+        });
       }
 
       console.log('Adding member with commitment:', commitment);
       
       // Fix: await the addMember function
       const result = await addMember(commitment);
+      console.log('addMember result:', result);
       
       if (result) {
         console.log('Member added successfully');
@@ -44,14 +64,26 @@ export default async function handler(req, res) {
         });
       }
     } catch (error) {
-      console.error('Error adding member:', error);
+      console.error('Error in /api/zk/group/members:', error);
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code
+      });
+      
       res.status(500).json({ 
         success: false,
         message: 'Error adding member', 
-        error: error.message 
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   } else {
-    res.status(405).json({ message: 'Method not allowed' });
+    res.status(405).json({ 
+      success: false,
+      message: 'Method not allowed',
+      allowedMethods: ['POST']
+    });
   }
 }
