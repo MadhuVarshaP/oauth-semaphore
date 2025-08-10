@@ -14,8 +14,7 @@ export default handleAuth({
     console.error('Error details:', {
       message: err.message,
       code: err.code,
-      statusCode: err.statusCode,
-      stack: err.stack
+      statusCode: err.statusCode
     });
     
     // Redirect to home with error
@@ -35,15 +34,6 @@ export default handleAuth({
   onCallback: (req, res, session) => {
     console.log('Callback successful:', session?.user?.email);
     return session;
-  },
-  
-  // Session configuration
-  session: {
-    absoluteDuration: 24 * 60 * 60, // 24 hours
-    cookieSecret: process.env.AUTH0_SECRET,
-    cookieSecure: process.env.NODE_ENV === 'production',
-    cookieHttpOnly: true,
-    cookieSameSite: 'lax'
   },
   
   // Authorization parameters
