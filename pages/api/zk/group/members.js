@@ -23,10 +23,33 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'Commitment is required' });
       }
 
-      const result = addMember(commitment);
-      res.status(200).json(result);
+      console.log('Adding member with commitment:', commitment);
+      
+      // Fix: await the addMember function
+      const result = await addMember(commitment);
+      
+      if (result) {
+        console.log('Member added successfully');
+        res.status(200).json({ 
+          success: true,
+          message: 'Member added to group successfully',
+          commitment: commitment
+        });
+      } else {
+        console.log('Member already exists in group');
+        res.status(200).json({ 
+          success: true,
+          message: 'Member already exists in group',
+          commitment: commitment
+        });
+      }
     } catch (error) {
-      res.status(500).json({ message: 'Error adding member', error: error.message });
+      console.error('Error adding member:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Error adding member', 
+        error: error.message 
+      });
     }
   } else {
     res.status(405).json({ message: 'Method not allowed' });
