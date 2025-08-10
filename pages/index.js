@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { Identity } from '@semaphore-protocol/identity';
 import { generateProof } from '@semaphore-protocol/proof';
 import { Group } from '@semaphore-protocol/group';
-import { getSession } from '@auth0/nextjs-auth0';
+import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/router';
 
 function Home() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const { user, error: authError, isLoading } = useUser();
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [serverIdentity, setServerIdentity] = useState(null);
   const [serverIdentityData, setServerIdentityData] = useState(null);
   const [groupDetails, setGroupDetails] = useState(null);
@@ -31,25 +30,21 @@ function Home() {
     }
   }, [router.query.error]);
 
-  // Check authentication status
+  // Handle auth errors
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const session = await getSession();
-        if (session?.user) {
-          setUser(session.user);
-          addLog('Sign in with Google handled by Auth0');
-          addLog('Ready to start Semaphore flow');
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, []);
+    if (authError) {
+      setError(authError.message);
+      addLog(`Auth Error: ${authError.message}`);
+    }
+  }, [authError]);
+
+  // Log successful authentication
+  useEffect(() => {
+    if (user) {
+      addLog('Sign in with Google handled by Auth0');
+      addLog('Ready to start Semaphore flow');
+    }
+  }, [user]);
 
   // Step 1: Initialize Server Identity
   const initializeServerIdentity = async () => {
