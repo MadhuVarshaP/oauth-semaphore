@@ -1,23 +1,37 @@
-import { resetGroupData } from '../../../../lib/semaphore/group';
+import { resetGroupData } from '../../../../lib/semaphore/group.js';
+import { withSecurityConfig } from '../../../../lib/security/middleware.js';
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method === 'POST') {
-    try {
-      await resetGroupData();
-      res.status(200).json({ message: 'Group data reset' });
-    } catch (error) {
-      res.status(500).json({ message: 'Error resetting group data', error: error.message });
-    }
-  } else {
-    res.status(405).json({ message: 'Method not allowed' });
+async function handler(req, res) {
+  try {
+    // Session already validated by security middleware
+    const userEmail = req.session.user.email;
+    
+    console.log('Group reset requested by:', userEmail);
+    console.log('Resetting encrypted group data...');
+    
+    // Reset group data (clears encrypted storage)
+    await resetGroupData();
+    
+    console.log('Group data reset successfully');
+    
+    res.status(200).json({ 
+      success: true,
+      message: 'Group data reset successfully',
+      resetBy: userEmail,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error resetting group data:', error);
+    
+    res.status(500).json({ 
+      success: false,
+      message: 'Error resetting group data', 
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      timestamp: new Date().toISOString()
+    });
   }
 }
+
+// Apply security middleware with group reset configuration (requires auth)
+export default withSecurityConfig('groupReset')(handler);
