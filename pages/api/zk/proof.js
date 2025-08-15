@@ -12,11 +12,18 @@ async function handler(req, res) {
     const userEmail = req.session.user.email;
     console.log('Proof requested by:', userEmail);
     
-    const { signal } = req.body;
+    const { signal, identityData } = req.body;
     if (!signal) {
       return res.status(400).json({ 
         success: false,
         message: 'Signal is required' 
+      });
+    }
+    
+    if (!identityData) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Identity data is required for proof generation' 
       });
     }
     
@@ -31,9 +38,28 @@ async function handler(req, res) {
       });
     }
 
-    // Create identity from user email
-    const identity = new Identity(userEmail);
-    console.log('Identity created for proof generation');
+    // Create identity from stored data (not from email)
+    let identity;
+    try {
+      if (identityData.trapdoor && identityData.nullifier) {
+        // Use stored trapdoor and nullifier
+        identity = new Identity(identityData.trapdoor, identityData.nullifier);
+        console.log('Identity created from stored data for proof generation');
+      } else {
+        throw new Error('Invalid identity data structure');
+      }
+    } catch (identityError) {
+      console.error('Error creating identity from stored data:', identityError);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid identity data provided',
+        error: 'IDENTITY_DATA_INVALID'
+      });
+    }
+    
+    // Verify the identity commitment matches what's stored on server
+    const serverCommitment = identity.commitment.toString();
+    console.log('Identity commitment from stored data:', serverCommitment);
     
     // Create group
     const group = new Group(groupData.id, groupData.treeDepth || 20, groupData.members.map(BigInt));
@@ -51,7 +77,8 @@ async function handler(req, res) {
       fullProof,
       externalNullifier: externalNullifier.toString(),
       message: 'ZK proof generated successfully',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      identityCommitment: serverCommitment
     });
     
   } catch (error) {
