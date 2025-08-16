@@ -4,6 +4,10 @@ const nextConfig = {
   // experimental: {
   //   esmExternals: true,
   // },
+  
+  allowedDevOrigins: [
+    process.env.NGROK_BASE_URL?.replace('https://', '') || '98d8166bd791.ngrok-free.app'
+  ],
   async headers() {
     return [
       {

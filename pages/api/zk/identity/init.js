@@ -1,4 +1,4 @@
-import { createIdentity } from '../../../../lib/semaphore/identity.js';
+import { generateDeterministicIdentity } from '../../../../lib/semaphore/identity.js';
 import { withSecurityConfig } from '../../../../lib/security/middleware.js';
 import { encryptSensitiveFields } from '../../../../lib/security/encryption.js';
 
@@ -32,10 +32,32 @@ async function handler(req, res) {
       });
     }
     
-    // Create secure identity (no longer using email directly as seed)
-    console.log('Creating identity for user:', userEmail);
-    const identity = createIdentity(userEmail);
-    console.log('Identity created successfully');
+    // Get Auth0 sub from session for deterministic identity
+    const auth0Sub = req.session.user.sub;
+    if (!auth0Sub) {
+      console.error('No Auth0 sub found in session');
+      return res.status(400).json({
+        success: false,
+        message: 'No Auth0 sub found in session',
+        error: 'AUTH0_SUB_MISSING'
+      });
+    }
+    
+    // Create deterministic identity using HKDF
+    console.log('Creating deterministic identity for user:', userEmail, 'sub:', auth0Sub);
+    const appSecret = process.env.AUTH0_SECRET;
+    if (!appSecret) {
+      console.error('AUTH0_SECRET not configured');
+      return res.status(500).json({
+        success: false,
+        message: 'AUTH0_SECRET not configured',
+        error: 'SECRET_MISSING'
+      });
+    }
+    
+    const identityResult = generateDeterministicIdentity(auth0Sub, appSecret);
+    const identity = identityResult.identity;
+    console.log('Deterministic identity created successfully');
     
     // Prepare identity data with sensitive fields
     const identityData = {
@@ -43,6 +65,7 @@ async function handler(req, res) {
       nullifier: identity.nullifier.toString(),
       commitment: identity.commitment.toString(),
       userEmail: userEmail,
+      auth0Sub: auth0Sub,
       createdAt: new Date().toISOString()
     };
     
@@ -66,7 +89,7 @@ async function handler(req, res) {
       success: true,
       identityCommitment: identity.commitment.toString(),
       identityData: encryptedIdentityData,
-      message: 'Identity created with cryptographically secure seed'
+      message: 'Deterministic identity created using HKDF'
     });
     
   } catch (error) {
@@ -91,6 +114,12 @@ async function handler(req, res) {
     } else if (error.message.includes('semaphore')) {
       errorMessage = 'Semaphore protocol error';
       errorCode = 'SEMAPHORE_ERROR';
+    } else if (error.message.includes('SECRET_MISSING')) {
+      errorMessage = 'Identity secret not configured';
+      errorCode = 'SECRET_MISSING';
+    } else if (error.message.includes('AUTH0_SUB_MISSING')) {
+      errorMessage = 'Auth0 sub not found in session';
+      errorCode = 'AUTH0_SUB_MISSING';
     }
     
     res.status(500).json({ 
