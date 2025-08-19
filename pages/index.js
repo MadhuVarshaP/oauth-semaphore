@@ -86,7 +86,8 @@ function Home() {
       });
       const data = await response.json();
       
-      if (!response.ok) {
+      // Check both HTTP status AND success field
+      if (!response.ok || !data.success) {
         throw new Error(data.message || `Server error: ${response.status}`);
       }
       
